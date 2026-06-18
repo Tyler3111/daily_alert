@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", case_sensitive=False)
 
     database_url: str = Field(
-        default="******localhost:5432/job_dashboard",
+        default="postgresql+asyncpg://user:password@localhost:5432/job_dashboard",
         alias="DATABASE_URL",
     )
     postgres_user: str = Field(default="user", alias="POSTGRES_USER")
