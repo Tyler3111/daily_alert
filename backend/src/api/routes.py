@@ -3,14 +3,21 @@
 from fastapi import APIRouter, HTTPException, status
 
 from src.api.schemas import JobOut, RefreshResponse, StatsResponse
-
+from src.jobs.database import JobDatabase
+from src.jobs.filters import FilterEngine
 router = APIRouter()
 
 
 @router.get("/jobs", response_model=list[JobOut])
 async def list_jobs() -> list[JobOut]:
     """Return a placeholder list of jobs."""
-
+    db = JobDatabase()
+    filters = FilterEngine()
+    
+    jobs = db.get_recent_jobs()
+    filtered = filters.apply_filters(jobs, location, experience, language)
+    
+    return {"jobs": filtered[:limit], "total": len(filtered)}
     return []
 
 

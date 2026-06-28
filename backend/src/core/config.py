@@ -1,59 +1,63 @@
-"""Application settings loaded from environment variables."""
+# modules/config.py
+import os
+from dataclasses import dataclass
+from typing import List, Optional
+from dotenv import load_dotenv
 
-from functools import lru_cache
-from typing import Annotated
-
-from pydantic import Field, field_validator
-from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
-
-
-class Settings(BaseSettings):
-    """Typed application settings."""
-
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", case_sensitive=False)
-
-    database_url: str = Field(
-        default="postgresql+asyncpg://user:password@localhost:5432/job_dashboard",
-        alias="DATABASE_URL",
-    )
-    postgres_user: str = Field(default="user", alias="POSTGRES_USER")
-    postgres_password: str = Field(default="password", alias="POSTGRES_PASSWORD")
-    postgres_db: str = Field(default="job_dashboard", alias="POSTGRES_DB")
-    job_keywords: Annotated[list[str], NoDecode] = Field(
-        default_factory=lambda: [
-            "software",
-            "engineer",
-            "backend",
-            "fullstack",
-            "python",
-            "typescript",
-            "hk",
-            "hongkong",
-        ],
-        alias="JOB_KEYWORDS",
-    )
-    match_threshold: float = Field(default=0.6, alias="MATCH_THRESHOLD")
-    fetch_interval_hours: int = Field(default=6, alias="FETCH_INTERVAL_HOURS")
-    api_v1_prefix: str = Field(default="/api/v1", alias="API_V1_PREFIX")
-    debug: bool = Field(default=True, alias="DEBUG")
-    indeed_query: str = Field(default="software+engineer", alias="INDEED_QUERY")
-    indeed_location: str = Field(default="hong+kong", alias="INDEED_LOCATION")
-
-    @field_validator("job_keywords", mode="before")
+@dataclass
+class Config:
+    """Centralized configuration for all modules."""
+    
+    # Redis
+    redis_host: str = "localhost"
+    redis_port: int = 6379
+    redis_password: Optional[str] = None
+    redis_db: int = 0
+    
+    # LLM
+    llm_api_key: Optional[str] = None
+    llm_model: str = "gpt-4"
+    
+    # Scraping
+    headless: bool = True
+    worker_timeout: int = 60
+    max_urls_per_cycle: int = 100
+    cycle_interval_hours: int = 24
+    workers_per_cycle: int = 4
+    
+    # Discovery
+    enable_discovery: bool = True
+    search_keywords: List[str] = None
+    
+    # Database
+    db_url: str = "sqlite:///jobs.db"
+    
+    # Search
+    default_location: str = "Hong Kong"
+    
+    def __post_init__(self):
+        if self.search_keywords is None:
+            self.search_keywords = ["software", "engineer", "developer"]
+    
     @classmethod
-    def _parse_keywords(cls, value: str | list[str]) -> list[str]:
-        """Parse keyword configuration from comma-separated string or list."""
-
-        if isinstance(value, list):
-            return value
-        return [item.strip() for item in value.split(",") if item.strip()]
-
-
-@lru_cache(maxsize=1)
-def get_settings() -> Settings:
-    """Return cached application settings."""
-
-    return Settings()
-
-
-settings = get_settings()
+    def from_env(cls, env_file: str = ".env"):
+        """Load configuration from environment variables."""
+        load_dotenv(env_file)
+        
+        return cls(
+            redis_host=os.getenv("REDIS_HOST", "localhost"),
+            redis_port=int(os.getenv("REDIS_PORT", 6379)),
+            redis_password=os.getenv("REDIS_PASSWORD"),
+            redis_db=int(os.getenv("REDIS_DB", 0)),
+            llm_api_key=os.getenv("LLM_API_KEY"),
+            llm_model=os.getenv("LLM_MODEL", "gpt-4"),
+            headless=os.getenv("HEADLESS", "true").lower() == "true",
+            worker_timeout=int(os.getenv("WORKER_TIMEOUT", 60)),
+            max_urls_per_cycle=int(os.getenv("MAX_URLS_PER_CYCLE", 100)),
+            cycle_interval_hours=int(os.getenv("CYCLE_INTERVAL_HOURS", 24)),
+            workers_per_cycle=int(os.getenv("WORKERS_PER_CYCLE", 4)),
+            enable_discovery=os.getenv("ENABLE_DISCOVERY", "true").lower() == "true",
+            search_keywords=os.getenv("SEARCH_KEYWORDS", "software,engineer,developer").split(","),
+            db_url=os.getenv("DATABASE_URL", "sqlite:///jobs.db"),
+            default_location=os.getenv("DEFAULT_LOCATION", "Hong Kong")
+        )

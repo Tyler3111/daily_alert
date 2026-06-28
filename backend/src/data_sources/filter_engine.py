@@ -1,6 +1,6 @@
 """Matching engine placeholder."""
 
-from src.matcher.keyword import keyword_score
+from src.data_sources.keyword import keyword_score
 
 
 async def match_job(text: str, keywords: list[str], threshold: float) -> tuple[float, bool]:

@@ -1,20 +1,16 @@
-"""Main entry point for the scraper."""
-
-import asyncio
 import argparse
-from core.config import Config
-from workers.orchestrator import Orchestrator
-import logging
-
-logging.basicConfig(level=logging.INFO)
+from modules.config import Config
+from modules.orchestrator import Orchestrator
 
 async def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--once', action='store_true', help='Run once and exit')
     parser.add_argument('--workers', type=int, default=4, help='Number of workers')
+    parser.add_argument('--config', type=str, default='.env', help='Config file')
+    
     args = parser.parse_args()
     
-    config = Config.from_env()
+    config = Config(args.config)
     orchestrator = Orchestrator(config)
     
     if args.once:
