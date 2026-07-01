@@ -5,10 +5,10 @@ import asyncio
 from typing import List, Dict, Optional
 import logging
 
-from modules.worker import Worker
-from services.browser import BrowserService
-from components.redis_component import RedisComponent
-from modules.config import Config
+from .worker import Worker
+from .browser_pool import BrowserPool
+from components.redis_queue import RedisQueue
+from core.config import Config
 
 logger = logging.getLogger(__name__)
 
@@ -21,8 +21,8 @@ class WorkerPool:
     
     def __init__(self, 
                  config: Config,
-                 browser_service: BrowserService,
-                 redis_component: RedisComponent):
+                 browser_service: BrowserPool,
+                 redis_component: RedisQueue):
         self.config = config
         self.browser_service = browser_service
         self.redis = redis_component
@@ -31,8 +31,6 @@ class WorkerPool:
         self._is_running = False
         self._stop_requested = False
         self._task_counter = 0
-        self._success_count = 0
-        self._failure_count = 0
         self._current_worker_index = 0
     
     async def start(self, num_workers: int = 4):
@@ -107,7 +105,6 @@ class WorkerPool:
     async def _handle_result(self, result):
         """Push result to Redis."""
         if result.success:
-            self._success_count += 1
             self.redis.push_result({
                 "url_id": result.url_id,
                 "url": result.url,
@@ -119,7 +116,6 @@ class WorkerPool:
             })
             logger.info(f"✅ Scraped {len(result.jobs)} jobs from {result.url}")
         else:
-            self._failure_count += 1
             self.redis.push_failure({
                 "url_id": result.url_id,
                 "url": result.url,
@@ -149,7 +145,4 @@ class WorkerPool:
             "is_running": self._is_running,
             "total_workers": len(self.workers),
             "tasks_completed": self._task_counter,
-            "success_count": self._success_count,
-            "failure_count": self._failure_count,
-            "success_rate": self._success_count / max(self._task_counter, 1)
         }

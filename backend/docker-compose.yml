@@ -1,6 +1,8 @@
+# docker-compose.yml
 services:
   postgres:
     image: pgvector/pgvector:pg15
+    container_name: job_dashboard_db
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
@@ -18,13 +20,17 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
+    networks:
+      - job_network
 
   backend:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: job_dashboard_backend
     env_file:
-      - .env.example
+      - .env
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://user:password@postgres:5432/job_dashboard}
     ports:
@@ -34,6 +40,13 @@ services:
         condition: service_healthy
     volumes:
       - ./src:/app/src
+    restart: unless-stopped
+    networks:
+      - job_network
 
 volumes:
   postgres_data:
+
+networks:
+  job_network:
+    driver: bridge

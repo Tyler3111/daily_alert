@@ -1,8 +1,8 @@
 # modules/browser_pool.py
 from typing import Optional, Dict
 from playwright.async_api import async_playwright, Browser, BrowserContext
-from modules.config import Config
-from modules.context_manager import ContextManager
+from core.config import Config
+from .context_manager import ContextManager
 import logging
 logger = logging.getLogger(__name__)
 

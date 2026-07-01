@@ -1,12 +1,13 @@
+# src/core/models.py
 """Database models for sources, jobs, and matches."""
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Optional
 
 from sqlalchemy import DateTime, Float, ForeignKey, Index, Integer, JSON, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.core.database import Base
+from core.base import Base
 
 
 class SourceState(Base):
@@ -67,3 +68,25 @@ class Match(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
     job: Mapped[Job] = relationship(back_populates="matches")
+
+
+class QueryState(Base):
+    """Track search queries and their performance."""
+
+    __tablename__ = "query_states"
+    __table_args__ = (
+        UniqueConstraint("query_hash", name="uq_query_states_hash"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    query_id: Mapped[str] = mapped_column(String(50), nullable=False, unique=True, index=True)
+    query: Mapped[str] = mapped_column(String(500), nullable=False, index=True)
+    query_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    source: Mapped[str] = mapped_column(String(50), nullable=False, default='llm_generated')
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default='pending')
+    times_used: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    success_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    failure_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    last_used: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    raw_data: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)

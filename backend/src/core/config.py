@@ -8,12 +8,12 @@ from dotenv import load_dotenv
 class Config:
     """Centralized configuration for all modules."""
     
+    debug = True
     # Redis
     redis_host: str = "localhost"
     redis_port: int = 6379
     redis_password: Optional[str] = None
     redis_db: int = 0
-    
     # LLM
     llm_api_key: Optional[str] = None
     llm_model: str = "gpt-4"
@@ -30,7 +30,7 @@ class Config:
     search_keywords: List[str] = None
     
     # Database
-    db_url: str = "sqlite:///jobs.db"
+    db_url: str = os.getenv("DATABASE_URL", "postgresql+asyncpg://user:password@localhost:5432/job_dashboard")
     
     # Search
     default_location: str = "Hong Kong"
@@ -58,6 +58,6 @@ class Config:
             workers_per_cycle=int(os.getenv("WORKERS_PER_CYCLE", 4)),
             enable_discovery=os.getenv("ENABLE_DISCOVERY", "true").lower() == "true",
             search_keywords=os.getenv("SEARCH_KEYWORDS", "software,engineer,developer").split(","),
-            db_url=os.getenv("DATABASE_URL", "sqlite:///jobs.db"),
+            db_url=os.getenv("DATABASE_URL", "postgresql+asyncpg://user:password@localhost:5432/job_dashboard"),
             default_location=os.getenv("DEFAULT_LOCATION", "Hong Kong")
         )
